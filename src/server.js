@@ -1,8 +1,10 @@
 import express from 'express';
 import pino from 'pino-http';
 import cors from 'cors';
-import { gettingContacts, gettingContactId } from './services/contacts.js';
+import contactsRouter from './routers/contacts.js';
 import { getEnvVar } from './utils/getEnvVar.js';
+import { errorHandler } from './middlewares/errorHandler.js';
+import { notFoundHandler } from './middlewares/notFoundHandler.js';
 
 const PORT = Number(getEnvVar('PORT', '3000'));
 
@@ -26,36 +28,11 @@ export const setupServer = () => {
     });
   });
 
-  app.get('/contacts', async (req, res, next) => {
-    try {
-      const result = await gettingContacts();
-      res.status(result.status).json(result);
-    } catch (error) {
-      next(error);
-    }
-  });
+  app.use('/contacts', contactsRouter);
 
-  app.get('/contacts/:contactId', async (req, res, next) => {
-    try {
-      const result = await gettingContactId(req.params.contactId);
-      res.status(result.status).json(result);
-    } catch (error) {
-      next(error);
-    }
-  });
+  app.use(notFoundHandler);
 
-  app.use((req, res) => {
-    res.status(404).json({
-      message: 'Not found',
-    });
-  });
-
-  app.use((err, req, res, next) => {
-    res.status(500).json({
-      message: 'Something went wrong',
-      error: err.message,
-    });
-  });
+  app.use(errorHandler);
 
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
